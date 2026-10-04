@@ -13,7 +13,8 @@ runtime เข้าด้วยกัน
 - AI, Agency CRM และ Income CRM ตอบ health `200`; อ่าน workspace ของ CRM
   ทั้งสองได้ การอ่าน AI status ยัง `not_configured` หากไม่มี token ที่ gateway ยอมรับ
 - พบ Income read timeout หนึ่งรอบใน smoke test แรก จึงเพิ่ม deadline จาก 8 เป็น
-  15 วินาที ต้องใช้ผล verification หลัง deploy รุ่นแก้ไขประกอบสถานะล่าสุด
+  15 วินาที หลัง deploy รุ่นแก้ไข อ่าน CRM ทั้งสองผ่านจาก client SDK ใหม่สองชุด
+  และ bridge process ใหม่ที่ดึงสิทธิ์จาก Infisical โดยไม่ใส่ token ใน config
 - ยังไม่ได้สังเกต uptime ต่อเนื่อง 24 ชั่วโมง และยังไม่ครอบคลุม local MCP ทุก tool
 
 ตรวจซ้ำโดยพิมพ์เฉพาะผล protocol/สถานะ ไม่พิมพ์ข้อมูล workspace:
