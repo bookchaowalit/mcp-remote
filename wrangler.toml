@@ -1,0 +1,13 @@
+name = "solo-empire-mcp-remote"
+main = "src/worker.ts"
+compatibility_date = "2026-10-04"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+# PUBLIC_ORIGIN must match the deployed HTTPS origin before MCP is enabled.
+# Configure MCP_TOKEN_SHA256 and upstream read tokens with Wrangler secrets.
+[vars]
+AI_API_ORIGIN = "https://api.bookchaowalit.com"
+AGENCY_CRM_ORIGIN = "https://crm-api-production-a7e0.up.railway.app"
+INCOME_CRM_ORIGIN = "https://crm-api-production-19fd.up.railway.app"
+ALLOWED_ORIGINS = ""
