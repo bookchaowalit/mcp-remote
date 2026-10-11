@@ -95,5 +95,5 @@ Rollback: ปิด client entry `solo-empire-remote` และย้อน Work
 
 ย้ายมาจาก `solo-empire/infra/mcp-remote/` (2026-10-11) พร้อมประวัติ git. Worker ที่ deploy แล้ว: `solo-empire-mcp-remote` บน Cloudflare Workers (`wrangler.toml` อยู่ที่ root ของ repo นี้; deploy ผ่าน `python3 manage.py deploy` เท่านั้น).
 
-`manage.py` และ `launch.py` ใช้ `secret_resolver.py` จาก solo-empire (`$SOLO_EMPIRE_ROOT/infra/scripts/utils`, ค่าเริ่มต้น `~/solo-empire`).
+`manage.py` และ `launch.py` ใช้ `vendor/secret_resolver.py` (สำเนาใน repo นี้ ไม่ต้องพึ่ง checkout อื่น).
 ถ้า MCP client ตั้งค่าไว้ที่ `infra/mcp-remote/launch.py` ต้องแก้เป็น path ของ repo นี้ (`<clone>/launch.py`).

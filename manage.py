@@ -23,9 +23,8 @@ import urllib.error
 import urllib.request
 from urllib.parse import urlparse
 
-ROOT = Path(os.environ.get("SOLO_EMPIRE_ROOT", str(Path.home() / "solo-empire")))
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(ROOT / "infra/scripts/utils"))
+sys.path.insert(0, str(Path(__file__).resolve().parent / "vendor"))
 os.environ.setdefault("SECRETS_PROVIDER", "infisical-cli")
 os.environ.setdefault("INFISICAL_CLI_ENABLED", "true")
 from secret_resolver import DEFAULT_INFISICAL_PROJECT_ID, get_secret, SecretResolutionError
