@@ -23,7 +23,7 @@ import urllib.error
 import urllib.request
 from urllib.parse import urlparse
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(os.environ.get("SOLO_EMPIRE_ROOT", str(Path.home() / "solo-empire")))
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "infra/scripts/utils"))
 os.environ.setdefault("SECRETS_PROVIDER", "infisical-cli")

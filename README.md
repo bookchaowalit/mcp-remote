@@ -20,8 +20,8 @@ runtime เข้าด้วยกัน
 ตรวจซ้ำโดยพิมพ์เฉพาะผล protocol/สถานะ ไม่พิมพ์ข้อมูล workspace:
 
 ```bash
-python3 infra/mcp-remote/verify.py
-python3 infra/mcp-remote/verify.py --bridge
+python3 verify.py
+python3 verify.py --bridge
 ```
 
 ## ขอบเขต
@@ -34,7 +34,7 @@ python3 infra/mcp-remote/verify.py --bridge
 | `get_agency_workspace` | Agency CRM | GET workspace |
 | `get_income_workspace` | Income CRM | GET workspace |
 
-MCP เดิมใน `infra/mcp-server/` ยังเป็น local และมีเครื่องมือเพิ่มเติมที่พึ่ง
+MCP เดิมใน `solo-empire/infra/mcp-server/` ยังเป็น local และมีเครื่องมือเพิ่มเติมที่พึ่ง
 SQLite, filesystem และ Python เครื่องมือเหล่านั้นไม่ได้กลายเป็น hosted โดย
 อัตโนมัติ การเพิ่ม upstream ต้องมี API ที่ deploy แล้วและผ่านการตรวจสิทธิ์ก่อน
 ไม่มี arbitrary HTTP proxy, remote shell, การส่งข้อความ หรือ AI generation
@@ -59,15 +59,15 @@ secret manager ของ client ได้
 ## ตรวจและ deploy
 
 ```bash
-npm --prefix infra/mcp-remote ci
-npm --prefix infra/mcp-remote test
-npm --prefix infra/mcp-remote run typecheck
-npm --prefix infra/mcp-remote run build
-python3 infra/mcp-remote/tests/manage_test.py
-python3 infra/mcp-remote/manage.py status
-python3 infra/mcp-remote/manage.py bootstrap
-python3 infra/mcp-remote/manage.py deploy
-python3 infra/mcp-remote/manage.py configure --endpoint https://solo-empire-mcp-remote.bookchaowalit.workers.dev/mcp
+npm ci
+npm test
+npm run typecheck
+npm run build
+python3 tests/manage_test.py
+python3 manage.py status
+python3 manage.py bootstrap
+python3 manage.py deploy
+python3 manage.py configure --endpoint https://solo-empire-mcp-remote.bookchaowalit.workers.dev/mcp
 ```
 
 `status` ตรวจ provider และพิมพ์ชื่อ plan/สถานะโดยไม่เปิดเผยค่า secret
@@ -89,3 +89,11 @@ client ใหม่ที่ URL เดิม และการอ่าน ups
 Rollback: ปิด client entry `solo-empire-remote` และย้อน Worker version ของ
 `solo-empire-mcp-remote` ผ่าน Cloudflare deployment history การ rollback ไม่
 ต้องเปลี่ยน database หรือ service ของ upstream
+
+
+## ที่มา / การย้าย
+
+ย้ายมาจาก `solo-empire/infra/mcp-remote/` (2026-10-11) พร้อมประวัติ git. Worker ที่ deploy แล้ว: `solo-empire-mcp-remote` บน Cloudflare Workers (`wrangler.toml` อยู่ที่ root ของ repo นี้; deploy ผ่าน `python3 manage.py deploy` เท่านั้น).
+
+`manage.py` และ `launch.py` ใช้ `secret_resolver.py` จาก solo-empire (`$SOLO_EMPIRE_ROOT/infra/scripts/utils`, ค่าเริ่มต้น `~/solo-empire`).
+ถ้า MCP client ตั้งค่าไว้ที่ `infra/mcp-remote/launch.py` ต้องแก้เป็น path ของ repo นี้ (`<clone>/launch.py`).

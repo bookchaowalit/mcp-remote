@@ -7,7 +7,7 @@ from pathlib import Path
 import shutil
 import sys
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(os.environ.get("SOLO_EMPIRE_ROOT", str(Path.home() / "solo-empire")))
 sys.path.insert(0, str(ROOT / "infra/scripts/utils"))
 
 
