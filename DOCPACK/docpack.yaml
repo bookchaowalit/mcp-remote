@@ -1,0 +1,8 @@
+system_id: bookchaowalit/private/solo-mcp-remote
+prefix: CARD
+brand: "MCP REMOTE"
+subtitle: "Remote MCP (Streamable HTTP) บน Cloudflare Workers สำหรับ agent"
+footer: "solo-mcp-remote — Product Card"
+color: "#3c096c"
+audience: internal
+tier: L0
