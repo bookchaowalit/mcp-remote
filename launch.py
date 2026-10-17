@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Start the remote MCP bridge with auth resolved at runtime, never in config."""
+
 from __future__ import annotations
 
 import os
@@ -17,10 +18,14 @@ def main() -> int:
     binary = shutil.which("infisical") or str(Path.home() / ".local/bin/infisical")
     os.environ.setdefault("INFISICAL_CLI", binary)
     from secret_resolver import get_secret, SecretResolutionError
+
     try:
         token = get_secret("SOLO_MCP_REMOTE_TOKEN", required=True)
     except SecretResolutionError:
-        print("Remote MCP: Infisical authentication is unavailable; reauthenticate the secret manager.", file=sys.stderr)
+        print(
+            "Remote MCP: Infisical authentication is unavailable; reauthenticate the secret manager.",
+            file=sys.stderr,
+        )
         return 1
     node = shutil.which("node") or str(Path.home() / ".local/bin/node")
     os.environ["SOLO_MCP_BRIDGE_TOKEN"] = token or ""
