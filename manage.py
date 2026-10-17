@@ -27,7 +27,12 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(Path(__file__).resolve().parent / "vendor"))
 os.environ.setdefault("SECRETS_PROVIDER", "infisical-cli")
 os.environ.setdefault("INFISICAL_CLI_ENABLED", "true")
-from secret_resolver import DEFAULT_INFISICAL_PROJECT_ID, get_secret, SecretResolutionError
+# The provider env defaults above must be set before this import, hence E402.
+from secret_resolver import (  # noqa: E402
+    DEFAULT_INFISICAL_PROJECT_ID,
+    get_secret,
+    SecretResolutionError,
+)
 
 NAME = "solo-empire-mcp-remote"
 
@@ -65,6 +70,8 @@ def cf_request(path: str):
         headers={"Authorization": "Bearer " + (key or "")},
     )
     try:
+        # Fixed https://api.cloudflare.com origin; only the account ID and a literal path are interpolated.
+        # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
         with urllib.request.urlopen(req, timeout=15) as response:
             payload = json.load(response)
     except urllib.error.HTTPError as exc:

@@ -1,0 +1,8 @@
+target-version = "py311"
+# vendor/ is a verbatim copy of the shared secret resolver; it is linted where it is maintained.
+extend-exclude = ["vendor"]
+
+[lint]
+# Pin the classic default rule set so newer Ruff releases with wider defaults do not change
+# what CI enforces.
+select = ["E4", "E7", "E9", "F"]
