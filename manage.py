@@ -4,6 +4,7 @@
 Only fixed provider commands run; credentials pass through memory/stdin.
 No database, private transcript or repo runtime state is uploaded.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -101,9 +102,25 @@ def bootstrap() -> None:
     project = os.environ.get("INFISICAL_PROJECT_ID", DEFAULT_INFISICAL_PROJECT_ID)
     environment = os.environ.get("INFISICAL_ENVIRONMENT", "dev")
     cli = os.environ.get("INFISICAL_CLI", "infisical")
-    lookup = subprocess.run([cli, "secrets", "get", "SOLO_MCP_REMOTE_TOKEN", "--plain", "--silent",
-                             "--path", "/mcp", "--env", environment, "--projectId", project],
-                            capture_output=True, text=True, timeout=30)
+    lookup = subprocess.run(
+        [
+            cli,
+            "secrets",
+            "get",
+            "SOLO_MCP_REMOTE_TOKEN",
+            "--plain",
+            "--silent",
+            "--path",
+            "/mcp",
+            "--env",
+            environment,
+            "--projectId",
+            project,
+        ],
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
     existing = lookup.stdout.strip() if lookup.returncode == 0 else None
     if existing:
         print(json.dumps({"secret": "SOLO_MCP_REMOTE_TOKEN", "status": "exists"}))
@@ -113,20 +130,58 @@ def bootstrap() -> None:
         raise RuntimeError("cannot_confirm_mcp_secret_absence")
     # Creating an existing folder may return nonzero; secret save/readback is
     # the actual gate and never overwrites an existing key deliberately.
-    subprocess.run([cli, "secrets", "folders", "create", "--name", "mcp", "--path", "/",
-                    "--env", environment, "--projectId", project], capture_output=True, timeout=30)
+    subprocess.run(
+        [
+            cli,
+            "secrets",
+            "folders",
+            "create",
+            "--name",
+            "mcp",
+            "--path",
+            "/",
+            "--env",
+            environment,
+            "--projectId",
+            project,
+        ],
+        capture_output=True,
+        timeout=30,
+    )
     token = secrets.token_urlsafe(48)
     fd, filename = tempfile.mkstemp(suffix=".env", prefix="solo-mcp-bootstrap-")
     try:
         with os.fdopen(fd, "w") as stream:
             stream.write("SOLO_MCP_REMOTE_TOKEN=" + token + "\n")
-        fixed_command([cli, "secrets", "set", "--file", filename, "--path", "/mcp",
-                       "--env", environment, "--projectId", project, "--silent"])
+        fixed_command(
+            [
+                cli,
+                "secrets",
+                "set",
+                "--file",
+                filename,
+                "--path",
+                "/mcp",
+                "--env",
+                environment,
+                "--projectId",
+                project,
+                "--silent",
+            ]
+        )
     finally:
         Path(filename).unlink(missing_ok=True)
     if resolve("SOLO_MCP_REMOTE_TOKEN", "/mcp", True) != token:
         raise RuntimeError("infisical_readback_failed")
-    print(json.dumps({"secret": "SOLO_MCP_REMOTE_TOKEN", "status": "saved_and_verified", "path": "/mcp"}))
+    print(
+        json.dumps(
+            {
+                "secret": "SOLO_MCP_REMOTE_TOKEN",
+                "status": "saved_and_verified",
+                "path": "/mcp",
+            }
+        )
+    )
 
 
 def worker_secrets() -> dict[str, str]:
@@ -150,20 +205,39 @@ def deploy() -> None:
     if not wrangler.exists():
         raise RuntimeError("run_npm_ci_first")
     env = os.environ.copy()
-    env["CLOUDFLARE_API_TOKEN"] = resolve("CLOUDFLARE_API_TOKEN", "/cloudflare", True) or ""
-    env["CLOUDFLARE_ACCOUNT_ID"] = resolve("CLOUDFLARE_ACCOUNT_ID", "/cloudflare", True) or ""
+    env["CLOUDFLARE_API_TOKEN"] = (
+        resolve("CLOUDFLARE_API_TOKEN", "/cloudflare", True) or ""
+    )
+    env["CLOUDFLARE_ACCOUNT_ID"] = (
+        resolve("CLOUDFLARE_ACCOUNT_ID", "/cloudflare", True) or ""
+    )
     env["WRANGLER_SEND_METRICS"] = "false"
     base = [shutil.which("node") or "node", str(wrangler)]
     # The initial version fails closed (503) until its authentication binding
     # is provisioned. Never deploy the legacy MCP or local database.
-    fixed_command(base + ["deploy", "--var", "PUBLIC_ORIGIN:" + endpoint], cwd=HERE, env=env)
-    fixed_command(base + ["secret", "bulk"], cwd=HERE, env=env, input=json.dumps(values))
-    print(json.dumps({"status": "deployed", "origin": endpoint, "secret_names": sorted(values)}))
+    fixed_command(
+        base + ["deploy", "--var", "PUBLIC_ORIGIN:" + endpoint], cwd=HERE, env=env
+    )
+    fixed_command(
+        base + ["secret", "bulk"], cwd=HERE, env=env, input=json.dumps(values)
+    )
+    print(
+        json.dumps(
+            {"status": "deployed", "origin": endpoint, "secret_names": sorted(values)}
+        )
+    )
 
 
 def configure(endpoint: str, config_path: Path | None = None) -> None:
     url = urlparse(endpoint)
-    if url.scheme != "https" or url.username or url.password or url.path != "/mcp" or url.query or url.fragment:
+    if (
+        url.scheme != "https"
+        or url.username
+        or url.password
+        or url.path != "/mcp"
+        or url.query
+        or url.fragment
+    ):
         raise RuntimeError("invalid_mcp_endpoint")
     config = config_path or Path.home() / ".codex/config.toml"
     original = config.read_text() if config.exists() else ""
@@ -171,17 +245,37 @@ def configure(endpoint: str, config_path: Path | None = None) -> None:
     servers = parsed.get("mcp_servers", {})
     if "solo-empire-remote" in servers:
         existing = servers["solo-empire-remote"]
-        if existing.get("args") == [str(HERE / "launch.py")] and existing.get("env", {}).get("MCP_REMOTE_URL") == endpoint:
+        if (
+            existing.get("args") == [str(HERE / "launch.py")]
+            and existing.get("env", {}).get("MCP_REMOTE_URL") == endpoint
+        ):
             print(json.dumps({"client": "codex", "status": "already_configured"}))
             return
         raise RuntimeError("existing_remote_config_requires_review")
+
     def literal(value: str) -> str:
         return json.dumps(value, ensure_ascii=False)
-    block = "\n[mcp_servers.solo-empire-remote]\n" + "command = " + literal(sys.executable) + "\n"
-    block += "args = [" + literal(str(HERE / "launch.py")) + "]\nstartup_timeout_sec = 60\ntool_timeout_sec = 30\nenabled = true\n"
-    block += "\n[mcp_servers.solo-empire-remote.env]\nMCP_REMOTE_URL = " + literal(endpoint) + "\n"
+
+    block = (
+        "\n[mcp_servers.solo-empire-remote]\n"
+        + "command = "
+        + literal(sys.executable)
+        + "\n"
+    )
+    block += (
+        "args = ["
+        + literal(str(HERE / "launch.py"))
+        + "]\nstartup_timeout_sec = 60\ntool_timeout_sec = 30\nenabled = true\n"
+    )
+    block += (
+        "\n[mcp_servers.solo-empire-remote.env]\nMCP_REMOTE_URL = "
+        + literal(endpoint)
+        + "\n"
+    )
     block += 'SECRETS_PROVIDER = "infisical-cli"\nINFISICAL_CLI_ENABLED = "true"\n'
-    block += "INFISICAL_CLI = " + literal(shutil.which("infisical") or "infisical") + "\n"
+    block += (
+        "INFISICAL_CLI = " + literal(shutil.which("infisical") or "infisical") + "\n"
+    )
     updated = original.rstrip() + "\n" + block
     tomllib.loads(updated)
     config.parent.mkdir(parents=True, exist_ok=True)
@@ -192,12 +286,23 @@ def configure(endpoint: str, config_path: Path | None = None) -> None:
         os.replace(filename, config)
     finally:
         Path(filename).unlink(missing_ok=True)
-    print(json.dumps({"client": "codex", "status": "configured", "endpoint": endpoint, "stored_secret_values": False}))
+    print(
+        json.dumps(
+            {
+                "client": "codex",
+                "status": "configured",
+                "endpoint": endpoint,
+                "stored_secret_values": False,
+            }
+        )
+    )
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("status", "bootstrap", "deploy", "configure"))
+    parser.add_argument(
+        "action", choices=("status", "bootstrap", "deploy", "configure")
+    )
     parser.add_argument("--endpoint")
     args = parser.parse_args()
     try:
@@ -208,7 +313,9 @@ def main() -> int:
                 result["rate_plans"] = [p.get("rate_plan", {}).get("id") for p in plans]
             except RuntimeError:
                 result["rate_plans"] = "unverified"
-            result["mcp_token_configured"] = bool(resolve("SOLO_MCP_REMOTE_TOKEN", "/mcp"))
+            result["mcp_token_configured"] = bool(
+                resolve("SOLO_MCP_REMOTE_TOKEN", "/mcp")
+            )
             print(json.dumps(result))
         elif args.action == "bootstrap":
             bootstrap()
@@ -218,9 +325,21 @@ def main() -> int:
             if not args.endpoint:
                 parser.error("configure needs --endpoint")
             configure(args.endpoint)
-    except (SecretResolutionError, RuntimeError, OSError, subprocess.TimeoutExpired) as exc:
-        code = str(exc) if type(exc) is RuntimeError and re.fullmatch(r"[a-z0-9_]+", str(exc)) else "secret_manager_or_provider_unavailable"
-        print(json.dumps({"status": "failed", "action": args.action, "error": code}), file=sys.stderr)
+    except (
+        SecretResolutionError,
+        RuntimeError,
+        OSError,
+        subprocess.TimeoutExpired,
+    ) as exc:
+        code = (
+            str(exc)
+            if type(exc) is RuntimeError and re.fullmatch(r"[a-z0-9_]+", str(exc))
+            else "secret_manager_or_provider_unavailable"
+        )
+        print(
+            json.dumps({"status": "failed", "action": args.action, "error": code}),
+            file=sys.stderr,
+        )
         return 1
     return 0
 
